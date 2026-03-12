@@ -1,0 +1,243 @@
+{
+  "name": "Orchestrator 5 — ФИНАЛЬНЫЙ",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "macrospravka-orchestrator",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-800, 0],
+      "id": "webhook-trigger",
+      "name": "Webhook (кнопка UI)"
+    },
+    {
+      "parameters": {
+        "workflowId": "ID_MONETAR_WORKFLOW",
+        "waitForSubWorkflow": true
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [-500, -300],
+      "id": "run-monetary",
+      "name": "Monetar Sector"
+    },
+    {
+      "parameters": {
+        "workflowId": "ID_REAL_WORKFLOW",
+        "waitForSubWorkflow": true
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [-500, -150],
+      "id": "run-real",
+      "name": "Real Sector"
+    },
+    {
+      "parameters": {
+        "workflowId": "ID_FISCAL_WORKFLOW",
+        "waitForSubWorkflow": true
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [-500, 0],
+      "id": "run-fiscal",
+      "name": "Fiscal Sector"
+    },
+    {
+      "parameters": {
+        "workflowId": "ID_EXTERNAL_WORKFLOW",
+        "waitForSubWorkflow": true
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [-500, 150],
+      "id": "run-external",
+      "name": "Vneshniy Sector"
+    },
+    {
+      "parameters": {
+        "workflowId": "ID_SOCIAL_WORKFLOW",
+        "waitForSubWorkflow": true
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [-500, 300],
+      "id": "run-social",
+      "name": "Socialniy Sector"
+    },
+    {
+      "parameters": {
+        "numberInputs": 5
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [-100, 0],
+      "id": "merge-all",
+      "name": "Merge (ждём все)"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "ID_MONETARY_DATATABLE",
+          "mode": "id"
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [150, -300],
+      "id": "get-monetary",
+      "name": "Get Monetary Data"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "IpqfbaX2s0fjL1Kg",
+          "mode": "id"
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [150, -150],
+      "id": "get-real",
+      "name": "Get Real Data"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "ID_FISCAL_DATATABLE",
+          "mode": "id"
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [150, 0],
+      "id": "get-fiscal",
+      "name": "Get Fiscal Data"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "ID_EXTERNAL_DATATABLE",
+          "mode": "id"
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [150, 150],
+      "id": "get-external",
+      "name": "Get External Data"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "ID_SOCIAL_DATATABLE",
+          "mode": "id"
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [150, 300],
+      "id": "get-social",
+      "name": "Get Social Data"
+    },
+    {
+      "parameters": {
+        "numberInputs": 5,
+        "mode": "mergeByPosition"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [400, 0],
+      "id": "merge-data",
+      "name": "Merge Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Собираем все данные 5 секторов в один JSON-объект\n// Каждый сектор — массив строк из своей DataTable\n\nconst allItems = $input.all();\n\n// После Merge данные идут потоком — группируем по источнику\n// Используем простой подход: каждый сектор дал нам N items\n// Структура: { monetary: [...], real: [...], ... }\n\nconst monetary = [];\nconst real = [];\nconst fiscal = [];\nconst external = [];\nconst social = [];\n\n// Каждый item содержит поле из своей DataTable\n// Определяем сектор по наличию специфичных полей\nfor (const item of allItems) {\n  const d = item.json;\n  if ('TONIA' in d || 'Base_rate' in d || 'Gold_Val_Reserve' in d) {\n    monetary.push(d);\n  } else if ('VVP' in d || 'agriculture' in d || 'promishlennost' in d) {\n    real.push(d);\n  } else if ('GB_Tax_revenue' in d || 'budget_deficit' in d) {\n    fiscal.push(d);\n  } else if ('Export' in d || 'Import' in d || 'trade_balance' in d) {\n    external.push(d);\n  } else if ('unemployment' in d || 'wages' in d || 'population' in d) {\n    social.push(d);\n  }\n}\n\nreturn [{\n  json: {\n    monetary,\n    real,\n    fiscal,\n    external,\n    social\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 0],
+      "id": "pack-data",
+      "name": "Pack All Data"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/api/generate",
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 0],
+      "id": "send-to-python",
+      "name": "Send to Python Service"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ok: true, message: 'Генерация Excel запущена', result: $json}) }}"
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1150, 0],
+      "id": "respond",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "connections": {
+    "Webhook (кнопка UI)": {
+      "main": [[
+        {"node": "Monetar Sector",  "type": "main", "index": 0},
+        {"node": "Real Sector",     "type": "main", "index": 0},
+        {"node": "Fiscal Sector",   "type": "main", "index": 0},
+        {"node": "Vneshniy Sector", "type": "main", "index": 0},
+        {"node": "Socialniy Sector","type": "main", "index": 0}
+      ]]
+    },
+    "Monetar Sector":  {"main": [[{"node": "Merge (ждём все)", "type": "main", "index": 0}]]},
+    "Real Sector":     {"main": [[{"node": "Merge (ждём все)", "type": "main", "index": 1}]]},
+    "Fiscal Sector":   {"main": [[{"node": "Merge (ждём все)", "type": "main", "index": 2}]]},
+    "Vneshniy Sector": {"main": [[{"node": "Merge (ждём все)", "type": "main", "index": 3}]]},
+    "Socialniy Sector":{"main": [[{"node": "Merge (ждём все)", "type": "main", "index": 4}]]},
+    "Merge (ждём все)": {"main": [[
+      {"node": "Get Monetary Data", "type": "main", "index": 0},
+      {"node": "Get Real Data",     "type": "main", "index": 0},
+      {"node": "Get Fiscal Data",   "type": "main", "index": 0},
+      {"node": "Get External Data", "type": "main", "index": 0},
+      {"node": "Get Social Data",   "type": "main", "index": 0}
+    ]]},
+    "Get Monetary Data": {"main": [[{"node": "Merge Data", "type": "main", "index": 0}]]},
+    "Get Real Data":     {"main": [[{"node": "Merge Data", "type": "main", "index": 1}]]},
+    "Get Fiscal Data":   {"main": [[{"node": "Merge Data", "type": "main", "index": 2}]]},
+    "Get External Data": {"main": [[{"node": "Merge Data", "type": "main", "index": 3}]]},
+    "Get Social Data":   {"main": [[{"node": "Merge Data", "type": "main", "index": 4}]]},
+    "Merge Data":        {"main": [[{"node": "Pack All Data",         "type": "main", "index": 0}]]},
+    "Pack All Data":     {"main": [[{"node": "Send to Python Service","type": "main", "index": 0}]]},
+    "Send to Python Service": {"main": [[{"node": "Respond to Webhook","type": "main", "index": 0}]]}
+  }
+}
