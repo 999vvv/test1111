@@ -252,116 +252,291 @@ HTML_TEMPLATE = """
 <title>Макросправка — Формирование Excel</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; color: #222; }
-  .header { background: #1a3a5c; color: white; padding: 20px 32px; display: flex; align-items: center; gap: 16px; }
-  .header h1 { font-size: 20px; font-weight: 600; }
-  .header span { font-size: 13px; opacity: 0.7; }
-  .container { max-width: 900px; margin: 32px auto; padding: 0 16px; }
-  .card { background: white; border-radius: 10px; padding: 24px; margin-bottom: 20px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-  .card h2 { font-size: 16px; color: #1a3a5c; margin-bottom: 16px; border-bottom: 2px solid #e8ecf0; padding-bottom: 10px; }
 
-  .actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f3f5f7;
+    color: #1f2937;
+  }
+
+  .header {
+    background: #1a3a5c;
+    color: white;
+    padding: 20px 32px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .header span {
+    font-size: 13px;
+    opacity: 0.82;
+  }
+
+  .container {
+    max-width: 920px;
+    margin: 32px auto;
+    padding: 0 16px 32px;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 18px;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+    border: 1px solid #e7edf3;
+  }
+
+  .card h2 {
+    font-size: 17px;
+    color: #1a3a5c;
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e8edf2;
+  }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+  }
+
+  .dot-idle { background: #9ca3af; }
+  .dot-running { background: #f59e0b; animation: pulse 1s infinite; }
+  .dot-done { background: #22c55e; }
+  .dot-error { background: #ef4444; }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.45; }
+  }
+
+  .info-text {
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.5;
+  }
+
+  .actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
 
   .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 12px 28px;
+    padding: 12px 22px;
     border: none;
-    border-radius: 6px;
-    font-size: 15px;
+    border-radius: 8px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: 0.2s ease;
     text-decoration: none;
   }
 
-  .btn-primary { background: #1a3a5c; color: white; }
-  .btn-primary:hover { background: #0f2440; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26,58,92,0.3); }
-  .btn-primary:disabled { background: #8fa8c0; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-primary {
+    background: #1a3a5c;
+    color: #fff;
+  }
+
+  .btn-primary:hover {
+    background: #14304d;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(26,58,92,0.22);
+  }
+
+  .btn-primary:disabled {
+    background: #94a3b8;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
 
   .btn-secondary {
-    background: #e8ecf0;
+    background: #eef2f6;
     color: #1a3a5c;
-    border: 1px solid #d5dde6;
+    border: 1px solid #d8e0e8;
   }
+
   .btn-secondary:hover {
-    background: #dde5ed;
+    background: #e6ecf2;
     transform: translateY(-1px);
   }
-  .btn-hidden { display: none; }
 
-  .sector-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
-  .sector-card {
-    border: 1px solid #e0e6ed;
-    border-radius: 8px;
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+  .btn-hidden {
+    display: none;
   }
-  .sector-name { font-size: 14px; font-weight: 500; }
-  .badge { padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
-  .badge-pending  { background: #f0f2f5; color: #888; }
-  .badge-processing { background: #fff3cd; color: #856404; }
-  .badge-done     { background: #d1f2e1; color: #155724; }
-  .badge-error    { background: #fde8e8; color: #721c24; }
-
-  .download-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    min-width: 88px;
-  }
-
-  .download-link  {
-    font-size: 12px;
-    color: #1a3a5c;
-    text-decoration: none;
-    margin-top: 4px;
-    display: block;
-    text-align: right;
-  }
-  .download-link:hover { text-decoration: underline; }
 
   .spinner {
-    width: 18px;
-    height: 18px;
+    width: 17px;
+    height: 17px;
     border: 3px solid rgba(255,255,255,0.3);
     border-top-color: white;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
 
-  .status-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-  .status-dot { width: 10px; height: 10px; border-radius: 50%; }
-  .dot-idle    { background: #adb5bd; }
-  .dot-running { background: #ffc107; animation: pulse 1s infinite; }
-  .dot-done    { background: #28a745; }
-  .dot-error   { background: #dc3545; }
-  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
 
-  .info-text { font-size: 13px; color: #6c757d; }
-  .updated-count { font-size: 11px; color: #6c757d; margin-top: 2px; text-align: right; }
+  .sector-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+  }
+
+  .sector-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    background: #fcfdff;
+  }
+
+  .sector-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .badge-pending {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+
+  .badge-processing {
+    background: #fff7df;
+    color: #9a6700;
+  }
+
+  .badge-done {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .badge-error {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .download-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    min-width: 105px;
+  }
+
+  .download-link {
+    font-size: 12px;
+    color: #1a3a5c;
+    text-decoration: none;
+    font-weight: 600;
+    text-align: right;
+  }
+
+  .download-link:hover {
+    text-decoration: underline;
+  }
+
+  .updated-count {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 4px;
+    text-align: right;
+    line-height: 1.3;
+  }
+
+  .log-shell {
+    border: 1px solid #dbe3eb;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #ffffff;
+  }
+
+  .log-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e5eaf0;
+  }
+
+  .log-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+  }
+
+  .log-status {
+    font-size: 12px;
+    color: #64748b;
+  }
+
+  .log-box {
+    background: #0f172a;
+    color: #d1fae5;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.65;
+    padding: 16px;
+    min-height: 170px;
+    max-height: 260px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .log-empty {
+    color: #94a3b8;
+  }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div>
-    <h1>📊 Макросправка — Автоформирование Excel</h1>
-    <span>Автоматический сбор данных и генерация отчётов</span>
-  </div>
+  <h1>📊 Макросправка — Автоформирование Excel</h1>
+  <span>Автоматический сбор данных и генерация отчётов</span>
 </div>
 
 <div class="container">
 
   <div class="card">
     <h2>Управление</h2>
+
     <div class="status-bar">
       <div class="status-dot dot-idle" id="statusDot"></div>
       <span class="info-text" id="statusText">Готов к запуску</span>
@@ -378,14 +553,13 @@ HTML_TEMPLATE = """
     </div>
 
     <p class="info-text" style="margin-top: 12px;">
-      Нажмите кнопку — данные автоматически соберутся из всех источников
-      и сформируются файлы Excel для каждого сектора.
+      Нажмите кнопку — данные автоматически соберутся из всех источников и сформируются файлы Excel для каждого сектора.
     </p>
   </div>
 
   <div class="card">
     <h2>Секторы</h2>
-    <div class="sector-grid" id="sectorGrid">
+    <div class="sector-grid">
       <div class="sector-card">
         <span class="sector-name">Монетарный сектор</span>
         <span class="badge badge-pending" id="s-monetary">Ожидание</span>
@@ -406,6 +580,17 @@ HTML_TEMPLATE = """
         <span class="sector-name">Социальный сектор</span>
         <span class="badge badge-pending" id="s-social">Ожидание</span>
       </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Журнал выполнения</h2>
+    <div class="log-shell">
+      <div class="log-toolbar">
+        <span class="log-title">Системные сообщения</span>
+        <span class="log-status" id="logStatus">Ожидание запуска</span>
+      </div>
+      <div class="log-box" id="logBox"><span class="log-empty">Нажмите кнопку для запуска процесса...</span></div>
     </div>
   </div>
 
@@ -440,6 +625,10 @@ let readyFiles = [];
 async function triggerAll() {
   const btn = document.getElementById("runBtn");
   const downloadAllBtn = document.getElementById("downloadAllBtn");
+  const logBox = document.getElementById("logBox");
+  const logStatus = document.getElementById("logStatus");
+  const dot = document.getElementById("statusDot");
+  const text = document.getElementById("statusText");
 
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner"></div><span>Запуск...</span>';
@@ -449,20 +638,19 @@ async function triggerAll() {
 
   Object.keys(SECTOR_NAMES).forEach(k => updateSectorBadge(k, "pending", null));
 
-  const dot = document.getElementById("statusDot");
-  const text = document.getElementById("statusText");
   dot.className = "status-dot dot-running";
-  dot.style.background = "";
   text.textContent = "Выполняется...";
+  logStatus.textContent = "Процесс запущен";
+  logBox.textContent = "Запуск воркфлоу...";
 
   try {
     const resp = await fetch("/api/trigger", { method: "POST" });
-    if (!resp.ok) {
-      throw new Error("Ошибка запуска");
-    }
+    if (!resp.ok) throw new Error("Ошибка запуска");
   } catch (e) {
-    text.textContent = "Ошибка связи с сервером";
     dot.className = "status-dot dot-error";
+    text.textContent = "Ошибка связи с сервером";
+    logStatus.textContent = "Ошибка";
+    logBox.textContent = "Не удалось запустить процесс: " + e;
     btn.disabled = false;
     btn.innerHTML = "<span>▶ Сформировать макросправку</span>";
     return;
@@ -488,13 +676,15 @@ function updateUI(data) {
   const text = document.getElementById("statusText");
   const btn = document.getElementById("runBtn");
   const downloadAllBtn = document.getElementById("downloadAllBtn");
+  const logBox = document.getElementById("logBox");
+  const logStatus = document.getElementById("logStatus");
 
   readyFiles = [];
 
   if (data.running) {
     dot.className = "status-dot dot-running";
-    dot.style.background = "";
     text.textContent = "Выполняется...";
+    logStatus.textContent = "Идёт обработка";
     btn.disabled = true;
     btn.innerHTML = '<div class="spinner"></div><span>Выполняется...</span>';
   } else if (data.finished_at) {
@@ -502,12 +692,12 @@ function updateUI(data) {
 
     if (hasErrors) {
       dot.className = "status-dot dot-error";
-      dot.style.background = "";
       text.textContent = "Завершено с ошибками";
+      logStatus.textContent = "Завершено с ошибками";
     } else {
       dot.className = "status-dot dot-done";
-      dot.style.background = "";
       text.textContent = "Успешно завершено";
+      logStatus.textContent = "Завершено успешно";
     }
 
     btn.disabled = false;
@@ -519,8 +709,8 @@ function updateUI(data) {
     }
   } else {
     dot.className = "status-dot dot-idle";
-    dot.style.background = "";
     text.textContent = "Готов к запуску";
+    logStatus.textContent = "Ожидание запуска";
     btn.disabled = false;
     btn.innerHTML = "<span>▶ Сформировать макросправку</span>";
   }
@@ -536,6 +726,13 @@ function updateUI(data) {
     downloadAllBtn.classList.remove("btn-hidden");
   } else {
     downloadAllBtn.classList.add("btn-hidden");
+  }
+
+  if (data.log && data.log.length) {
+    logBox.textContent = data.log.join("\\n");
+    logBox.scrollTop = logBox.scrollHeight;
+  } else {
+    logBox.innerHTML = '<span class="log-empty">Пока нет сообщений...</span>';
   }
 }
 
@@ -593,4 +790,5 @@ if __name__ == "__main__":
     print("  Открыть интерфейс: http://localhost:8000")
     print("=" * 60)
     app.run(host="0.0.0.0", port=5000, debug=False)
+
 
