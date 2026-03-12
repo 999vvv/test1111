@@ -260,36 +260,93 @@ HTML_TEMPLATE = """
   .card { background: white; border-radius: 10px; padding: 24px; margin-bottom: 20px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
   .card h2 { font-size: 16px; color: #1a3a5c; margin-bottom: 16px; border-bottom: 2px solid #e8ecf0; padding-bottom: 10px; }
-  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px;
-         border: none; border-radius: 6px; font-size: 15px; font-weight: 600;
-         cursor: pointer; transition: all 0.2s; }
+
+  .actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 28px;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+
   .btn-primary { background: #1a3a5c; color: white; }
   .btn-primary:hover { background: #0f2440; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26,58,92,0.3); }
   .btn-primary:disabled { background: #8fa8c0; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .btn-secondary {
+    background: #e8ecf0;
+    color: #1a3a5c;
+    border: 1px solid #d5dde6;
+  }
+  .btn-secondary:hover {
+    background: #dde5ed;
+    transform: translateY(-1px);
+  }
+  .btn-hidden { display: none; }
+
   .sector-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
-  .sector-card { border: 1px solid #e0e6ed; border-radius: 8px; padding: 14px 16px;
-                 display: flex; align-items: center; justify-content: space-between; }
+  .sector-card {
+    border: 1px solid #e0e6ed;
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
   .sector-name { font-size: 14px; font-weight: 500; }
   .badge { padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
   .badge-pending  { background: #f0f2f5; color: #888; }
   .badge-processing { background: #fff3cd; color: #856404; }
   .badge-done     { background: #d1f2e1; color: #155724; }
   .badge-error    { background: #fde8e8; color: #721c24; }
-  .download-link  { font-size: 12px; color: #1a3a5c; text-decoration: none; margin-top: 4px; display: block; }
+
+  .download-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    min-width: 88px;
+  }
+
+  .download-link  {
+    font-size: 12px;
+    color: #1a3a5c;
+    text-decoration: none;
+    margin-top: 4px;
+    display: block;
+    text-align: right;
+  }
   .download-link:hover { text-decoration: underline; }
-  .log-box { background: #0d1117; color: #58d68d; font-family: monospace; font-size: 12px;
-             padding: 16px; border-radius: 6px; max-height: 220px; overflow-y: auto; line-height: 1.8; }
-  .spinner { width: 18px; height: 18px; border: 3px solid rgba(255,255,255,0.3);
-             border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+
+  .spinner {
+    width: 18px;
+    height: 18px;
+    border: 3px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
   @keyframes spin { to { transform: rotate(360deg); } }
+
   .status-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
   .status-dot { width: 10px; height: 10px; border-radius: 50%; }
   .dot-idle    { background: #adb5bd; }
   .dot-running { background: #ffc107; animation: pulse 1s infinite; }
   .dot-done    { background: #28a745; }
+  .dot-error   { background: #dc3545; }
   @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
   .info-text { font-size: 13px; color: #6c757d; }
-  .updated-count { font-size: 11px; color: #6c757d; margin-top: 2px; }
+  .updated-count { font-size: 11px; color: #6c757d; margin-top: 2px; text-align: right; }
 </style>
 </head>
 <body>
@@ -309,9 +366,17 @@ HTML_TEMPLATE = """
       <div class="status-dot dot-idle" id="statusDot"></div>
       <span class="info-text" id="statusText">Готов к запуску</span>
     </div>
-    <button class="btn btn-primary" id="runBtn" onclick="triggerAll()">
-      <span>▶ Сформировать макросправку</span>
-    </button>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="runBtn" onclick="triggerAll()">
+        <span>▶ Сформировать макросправку</span>
+      </button>
+
+      <button class="btn btn-secondary btn-hidden" id="downloadAllBtn" onclick="downloadAllFiles()">
+        <span>⬇ Скачать все файлы</span>
+      </button>
+    </div>
+
     <p class="info-text" style="margin-top: 12px;">
       Нажмите кнопку — данные автоматически соберутся из всех источников
       и сформируются файлы Excel для каждого сектора.
@@ -321,17 +386,27 @@ HTML_TEMPLATE = """
   <div class="card">
     <h2>Секторы</h2>
     <div class="sector-grid" id="sectorGrid">
-      <div class="sector-card"><span class="sector-name">Монетарный сектор</span><span class="badge badge-pending" id="s-monetary">Ожидание</span></div>
-      <div class="sector-card"><span class="sector-name">Реальный сектор</span><span class="badge badge-pending" id="s-real">Ожидание</span></div>
-      <div class="sector-card"><span class="sector-name">Фискальный сектор</span><span class="badge badge-pending" id="s-fiscal">Ожидание</span></div>
-      <div class="sector-card"><span class="sector-name">Внешний сектор</span><span class="badge badge-pending" id="s-external">Ожидание</span></div>
-      <div class="sector-card"><span class="sector-name">Социальный сектор</span><span class="badge badge-pending" id="s-social">Ожидание</span></div>
+      <div class="sector-card">
+        <span class="sector-name">Монетарный сектор</span>
+        <span class="badge badge-pending" id="s-monetary">Ожидание</span>
+      </div>
+      <div class="sector-card">
+        <span class="sector-name">Реальный сектор</span>
+        <span class="badge badge-pending" id="s-real">Ожидание</span>
+      </div>
+      <div class="sector-card">
+        <span class="sector-name">Фискальный сектор</span>
+        <span class="badge badge-pending" id="s-fiscal">Ожидание</span>
+      </div>
+      <div class="sector-card">
+        <span class="sector-name">Внешний сектор</span>
+        <span class="badge badge-pending" id="s-external">Ожидание</span>
+      </div>
+      <div class="sector-card">
+        <span class="sector-name">Социальный сектор</span>
+        <span class="badge badge-pending" id="s-social">Ожидание</span>
+      </div>
     </div>
-  </div>
-
-  <div class="card">
-    <h2>Журнал выполнения</h2>
-    <div class="log-box" id="logBox">Нажмите кнопку для запуска...</div>
   </div>
 
 </div>
@@ -344,12 +419,14 @@ const SECTOR_NAMES = {
   external: "Внешний сектор",
   social:   "Социальный сектор",
 };
+
 const BADGE_CLASS = {
   pending:    "badge-pending",
   processing: "badge-processing",
   done:       "badge-done",
   error:      "badge-error",
 };
+
 const BADGE_TEXT = {
   pending:    "Ожидание",
   processing: "⏳ Обработка...",
@@ -358,28 +435,39 @@ const BADGE_TEXT = {
 };
 
 let polling = null;
+let readyFiles = [];
 
 async function triggerAll() {
   const btn = document.getElementById("runBtn");
+  const downloadAllBtn = document.getElementById("downloadAllBtn");
+
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner"></div><span>Запуск...</span>';
-  document.getElementById("logBox").textContent = "Запуск воркфлоу n8n...";
 
-  // Сброс статусов
+  readyFiles = [];
+  downloadAllBtn.classList.add("btn-hidden");
+
   Object.keys(SECTOR_NAMES).forEach(k => updateSectorBadge(k, "pending", null));
+
+  const dot = document.getElementById("statusDot");
+  const text = document.getElementById("statusText");
+  dot.className = "status-dot dot-running";
+  dot.style.background = "";
+  text.textContent = "Выполняется...";
 
   try {
     const resp = await fetch("/api/trigger", { method: "POST" });
-    const data = await resp.json();
-    document.getElementById("logBox").textContent = data.message + "\\n";
-  } catch(e) {
-    document.getElementById("logBox").textContent = "Ошибка связи с сервером: " + e;
+    if (!resp.ok) {
+      throw new Error("Ошибка запуска");
+    }
+  } catch (e) {
+    text.textContent = "Ошибка связи с сервером";
+    dot.className = "status-dot dot-error";
     btn.disabled = false;
     btn.innerHTML = "<span>▶ Сформировать макросправку</span>";
     return;
   }
 
-  // Начать polling статуса
   if (polling) clearInterval(polling);
   polling = setInterval(fetchStatus, 2000);
 }
@@ -387,69 +475,110 @@ async function triggerAll() {
 async function fetchStatus() {
   try {
     const resp = await fetch("/api/status");
+    if (!resp.ok) return;
     const data = await resp.json();
     updateUI(data);
-  } catch(e) {}
+  } catch (e) {
+    console.log("Status error:", e);
+  }
 }
 
 function updateUI(data) {
-  const dot  = document.getElementById("statusDot");
+  const dot = document.getElementById("statusDot");
   const text = document.getElementById("statusText");
-  const btn  = document.getElementById("runBtn");
+  const btn = document.getElementById("runBtn");
+  const downloadAllBtn = document.getElementById("downloadAllBtn");
+
+  readyFiles = [];
 
   if (data.running) {
-    dot.className  = "status-dot dot-running";
+    dot.className = "status-dot dot-running";
+    dot.style.background = "";
     text.textContent = "Выполняется...";
     btn.disabled = true;
     btn.innerHTML = '<div class="spinner"></div><span>Выполняется...</span>';
   } else if (data.finished_at) {
-    const hasErrors = Object.values(data.sectors).some(s => s.status === "error");
-    dot.className  = "status-dot " + (hasErrors ? "" : "dot-done");
-    dot.style.background = hasErrors ? "#dc3545" : "#28a745";
-    text.textContent = hasErrors
-      ? "Завершено с ошибками (" + data.finished_at.substring(11,19) + ")"
-      : "Успешно завершено (" + data.finished_at.substring(11,19) + ")";
+    const hasErrors = Object.values(data.sectors || {}).some(s => s.status === "error");
+
+    if (hasErrors) {
+      dot.className = "status-dot dot-error";
+      dot.style.background = "";
+      text.textContent = "Завершено с ошибками";
+    } else {
+      dot.className = "status-dot dot-done";
+      dot.style.background = "";
+      text.textContent = "Успешно завершено";
+    }
+
     btn.disabled = false;
     btn.innerHTML = "<span>▶ Сформировать макросправку</span>";
-    if (polling) { clearInterval(polling); polling = null; }
+
+    if (polling) {
+      clearInterval(polling);
+      polling = null;
+    }
+  } else {
+    dot.className = "status-dot dot-idle";
+    dot.style.background = "";
+    text.textContent = "Готов к запуску";
+    btn.disabled = false;
+    btn.innerHTML = "<span>▶ Сформировать макросправку</span>";
   }
 
-  // Секторы
-  Object.entries(data.sectors).forEach(([key, info]) => {
+  Object.entries(data.sectors || {}).forEach(([key, info]) => {
     updateSectorBadge(key, info.status, info);
+    if (info && info.status === "done" && info.output) {
+      readyFiles.push(info.output);
+    }
   });
 
-  // Лог
-  if (data.log && data.log.length) {
-    document.getElementById("logBox").textContent = data.log.join("\\n");
-    document.getElementById("logBox").scrollTop = 9999;
+  if (readyFiles.length > 0) {
+    downloadAllBtn.classList.remove("btn-hidden");
+  } else {
+    downloadAllBtn.classList.add("btn-hidden");
   }
 }
 
 function updateSectorBadge(key, status, info) {
   const el = document.getElementById("s-" + key);
   if (!el) return;
+
   el.className = "badge " + (BADGE_CLASS[status] || "badge-pending");
   el.textContent = BADGE_TEXT[status] || status;
 
-  // Ссылка на скачивание
   const card = el.closest(".sector-card");
-  let dlLink = card.querySelector(".download-link");
+  let wrap = card.querySelector(".download-wrap");
+
   if (info && info.status === "done" && info.output) {
-    if (!dlLink) {
-      dlLink = document.createElement("div");
-      dlLink.style.display = "flex";
-      dlLink.style.flexDirection = "column";
-      dlLink.style.alignItems = "flex-end";
-      card.appendChild(dlLink);
+    if (!wrap) {
+      wrap = document.createElement("div");
+      wrap.className = "download-wrap";
+      card.appendChild(wrap);
     }
-    dlLink.innerHTML =
-      '<a class="download-link" href="/api/download/' + info.output + '">⬇ Скачать Excel</a>' +
+
+    wrap.innerHTML =
+      '<a class="download-link" href="/api/download/' + encodeURIComponent(info.output) + '">⬇ Скачать Excel</a>' +
       (info.updated ? '<span class="updated-count">Обновлено ячеек: ' + info.updated + '</span>' : '');
+  } else if (wrap) {
+    wrap.remove();
   }
 }
 
-// Обновляем статус при загрузке страницы
+function downloadAllFiles() {
+  if (!readyFiles.length) return;
+
+  readyFiles.forEach((file, index) => {
+    setTimeout(() => {
+      const a = document.createElement("a");
+      a.href = "/api/download/" + encodeURIComponent(file);
+      a.download = "";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }, index * 250);
+  });
+}
+
 fetchStatus();
 </script>
 </body>
@@ -464,3 +593,4 @@ if __name__ == "__main__":
     print("  Открыть интерфейс: http://localhost:8000")
     print("=" * 60)
     app.run(host="0.0.0.0", port=5000, debug=False)
+
