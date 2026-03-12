@@ -1,3 +1,14 @@
+@echo off
+cd /d "C:\Users\Aizhan.kenesh\Desktop\Macrospravka"
+
+call venv\Scripts\activate.bat
+
+venv\Scripts\python app.py
+
+pause
+
+
+
 # ИНСТРУКЦИЯ ПО РАЗВЁРТЫВАНИЮ
 # ===========================
 # Макросправка — сервис автоматического формирования Excel
